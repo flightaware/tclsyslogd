@@ -10,7 +10,7 @@ MAN=	syslog.conf.5 syslogd.8
 SRCS=	syslogd.c ttymsg.c
 
 DPADD=	${LIBUTIL}
-LDADD=	-lutil
+LDADD=	-lutil -ltcl84
 
 WARNS?=	1
 
@@ -18,6 +18,8 @@ WARNS?=	1
 CFLAGS+= -DINET6
 .endif
 
-CFLAGS+= -I/usr/src/usr.bin/wall
+CFLAGS+= -I/usr/src/usr.bin/wall -I/usr/local/include/tcl8.4
+
+LDFLAGS+= -L/usr/local/lib
 
 .include <bsd.prog.mk>

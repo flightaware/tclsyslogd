@@ -107,6 +107,8 @@ __FBSDID("$FreeBSD: src/usr.sbin/syslogd/syslogd.c,v 1.152.2.5 2008/09/01 16:10:
 #include <unistd.h>
 #include <utmp.h>
 
+#include <tcl.h>
+
 #include "pathnames.h"
 #include "ttymsg.h"
 
