@@ -123,6 +123,8 @@ const char	ctty[] = _PATH_CONSOLE;
 
 #define	MAXUNAMES	20	/* maximum number of user names */
 
+Tcl_Interp *interp;
+
 /*
  * Unix sockets.
  * We have two default sockets, one with 666 permissions,
@@ -337,6 +339,20 @@ static int	waitdaemon(int, int, int);
 static void	timedout(int);
 static void	double_rbuf(int);
 
+void
+init_tcl ()
+{
+    interp = Tcl_CreateInterp();
+    if (Tcl_Init (interp) == TCL_ERROR) {
+	dprintf("tcl init failed: %s\n", Tcl_GetStringResult (interp));
+	return;
+    }
+
+    if (Tcl_Eval (interp, "source syslog.tcl") == TCL_ERROR) {
+	dprintf("tcl startup failed: %s\n", Tcl_GetStringResult (interp));
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -352,6 +368,8 @@ main(int argc, char *argv[])
 	sigset_t mask;
 	pid_t ppid = 1, spid;
 	socklen_t len;
+
+        init_tcl ();
 
 	bindhostname = NULL;
 	while ((ch = getopt(argc, argv, "468Aa:b:cCdf:kl:m:nop:P:sS:uv")) != -1)
@@ -706,6 +724,22 @@ usage(void)
 	exit(1);
 }
 
+static void
+set_tcl_var(const char *varName, Tcl_Obj *value) {
+    if (Tcl_SetVar2Ex (interp, "message", varName, value, TCL_LEAVE_ERR_MSG) == NULL) {
+	dprintf("tcl set var for %s failed: %s\n", varName, Tcl_GetStringResult (interp));
+    }
+}
+
+static void
+call_tcl () {
+    if (Tcl_Eval (interp, "syslog message") == TCL_ERROR) {
+	dprintf("tcl eval failed: %s\n", Tcl_GetStringResult (interp));
+    }
+
+    Tcl_UnsetVar (interp, "message", 0);
+}
+
 /*
  * Take a raw input line, decode the message, and print the message
  * on the appropriate log files.
@@ -921,6 +955,9 @@ logmsg(int pri, const char *msg, const char *from, int flags)
 		msglen -= 16;
 	}
 
+	set_tcl_var ("clock", Tcl_NewLongObj (now));
+	set_tcl_var ("timestamp", Tcl_NewStringObj (timestamp, sizeof(f->f_lasttime)));
+
 	/* skip leading blanks */
 	while (isspace(*msg)) {
 		msg++;
@@ -939,7 +976,11 @@ logmsg(int pri, const char *msg, const char *from, int flags)
 		return;
 	}
 
+	set_tcl_var ("facility", Tcl_NewIntObj (fac));
+
 	prilev = LOG_PRI(pri);
+
+	set_tcl_var ("priority", Tcl_NewIntObj (prilev));
 
 	/* extract program name */
 	for (i = 0; i < NAME_MAX; i++) {
@@ -950,13 +991,21 @@ logmsg(int pri, const char *msg, const char *from, int flags)
 	}
 	prog[i] = 0;
 
+	set_tcl_var ("program", Tcl_NewStringObj (prog, -1));
+
 	/* add kernel prefix for kernel messages */
 	if (flags & ISKERNEL) {
 		snprintf(buf, sizeof(buf), "%s: %s",
 		    use_bootfile ? bootfile : "kernel", msg);
 		msg = buf;
 		msglen = strlen(buf);
+
+		set_tcl_var ("kernel", Tcl_NewStringObj (bootfile, -1));
 	}
+
+	set_tcl_var ("msg", Tcl_NewStringObj (msg, -1));
+
+	call_tcl ();
 
 	/* log the message to the particular outputs */
 	if (!Initialized) {
