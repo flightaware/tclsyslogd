@@ -1,5 +1,8 @@
 #	@(#)Makefile	8.1 (Berkeley) 6/6/93
 # $FreeBSD: src/usr.sbin/syslogd/Makefile,v 1.13 2006/07/27 14:52:12 yar Exp $
+#
+# $Id: Makefile,v 1.5 2009-02-11 22:45:20 karl Exp $
+#
 
 # uncomment for debugging - probably a better way
 #CFLAGS+= -g -O0
