@@ -932,6 +932,7 @@ logmsg(int pri, const char *msg, const char *from, int flags)
 	const char *timestamp;
  	char prog[NAME_MAX+1];
 	char buf[MAXLINE+1];
+	CODE *c;
 
 	dprintf("logmsg: pri %o, flags %x, from %s, msg %s\n",
 	    pri, flags, from, msg);
@@ -977,11 +978,33 @@ logmsg(int pri, const char *msg, const char *from, int flags)
 		return;
 	}
 
-	set_tcl_var ("facility", Tcl_NewIntObj (fac));
+	/* get the facility name if possible and tell Tcl about it */
+        for (c = facilitynames; c->c_name; c++) {
+	  if (c->c_val == fac) {
+	    break;
+	  }
+        }
 
+	if (c->c_name == NULL) {
+	    set_tcl_var ("facility", Tcl_NewIntObj (fac));
+	} else {
+	    set_tcl_var ("facility", Tcl_NewStringObj (c->c_name, -1));
+	}
+
+	/* get the privilege level name if possible and tell Tcl about it */
 	prilev = LOG_PRI(pri);
 
-	set_tcl_var ("priority", Tcl_NewIntObj (prilev));
+        for (c = prioritynames; c->c_name; c++) {
+	  if (c->c_val == pri) {
+	    break;
+	  }
+        }
+
+	if (c->c_name == NULL) {
+	    set_tcl_var ("priority", Tcl_NewIntObj (prilev));
+	} else {
+	    set_tcl_var ("priority", Tcl_NewStringObj (c->c_name, -1));
+	}
 
 	/* extract program name */
 	for (i = 0; i < NAME_MAX; i++) {
