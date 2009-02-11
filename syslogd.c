@@ -996,7 +996,7 @@ logmsg(int pri, const char *msg, const char *from, int flags)
 	prilev = LOG_PRI(pri);
 
         for (c = prioritynames; c->c_name; c++) {
-	  if (c->c_val == pri) {
+	  if (c->c_val == prilev) {
 	    break;
 	  }
         }

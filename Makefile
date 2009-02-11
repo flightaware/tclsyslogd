@@ -1,6 +1,10 @@
 #	@(#)Makefile	8.1 (Berkeley) 6/6/93
 # $FreeBSD: src/usr.sbin/syslogd/Makefile,v 1.13 2006/07/27 14:52:12 yar Exp $
 
+# uncomment for debugging - probably a better way
+#CFLAGS+= -g -O0
+#LDFLAGS+= -g
+
 .include <bsd.own.mk>
 
 .PATH: /usr/src/usr.bin/wall
