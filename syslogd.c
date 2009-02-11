@@ -928,7 +928,7 @@ static void
 logmsg(int pri, const char *msg, const char *from, int flags)
 {
 	struct filed *f;
-	int i, fac, msglen, omask, prilev;
+	int i, fac, maskedfac, msglen, omask, prilev;
 	const char *timestamp;
  	char prog[NAME_MAX+1];
 	char buf[MAXLINE+1];
@@ -978,9 +978,10 @@ logmsg(int pri, const char *msg, const char *from, int flags)
 		return;
 	}
 
+	maskedfac = pri & LOG_FACMASK;
 	/* get the facility name if possible and tell Tcl about it */
         for (c = facilitynames; c->c_name; c++) {
-	  if (c->c_val == fac) {
+	  if (c->c_val == maskedfac) {
 	    break;
 	  }
         }
