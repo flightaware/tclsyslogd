@@ -10,12 +10,12 @@
 
 .PATH: /usr/src/usr.bin/wall
 
-PROG=	syslogd
+PROG=	tclsyslogd
 MAN=	syslog.conf.5 syslogd.8
 SRCS=	syslogd.c ttymsg.c
 
 DPADD=	${LIBUTIL}
-LDADD=	-lutil -ltcl84
+LDADD=	-lutil -ltcl85
 
 WARNS?=	3
 
@@ -23,7 +23,7 @@ WARNS?=	3
 CFLAGS+= -DINET6
 .endif
 
-CFLAGS+= -I/usr/src/usr.bin/wall -I/usr/local/include/tcl8.4
+CFLAGS+= -I/usr/src/usr.bin/wall -I/usr/local/include/tcl8.5
 
 LDFLAGS+= -L/usr/local/lib
 

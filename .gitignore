@@ -1,5 +1,5 @@
 syslog.conf.5.gz
-syslogd
+tclsyslogd
 syslogd.8.gz
 syslogd.o
 ttymsg.o
