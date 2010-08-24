@@ -344,8 +344,11 @@ static int	waitdaemon(int, int, int);
 static void	timedout(int);
 static void	double_rbuf(int);
 
-void
-init_tcl ()
+static void	init_tcl(void);
+static void	call_tcl (void);
+
+static void
+init_tcl (void)
 {
     interp = Tcl_CreateInterp();
     if (Tcl_Init (interp) == TCL_ERROR) {

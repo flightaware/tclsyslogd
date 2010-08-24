@@ -1,0 +1,5 @@
+syslog.conf.5.gz
+syslogd
+syslogd.8.gz
+syslogd.o
+ttymsg.o
