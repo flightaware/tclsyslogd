@@ -26,11 +26,9 @@
 .\" SUCH DAMAGE.
 .\"
 .\"     @(#)syslog.conf.5	8.1 (Berkeley) 6/9/93
-.\" $FreeBSD: src/usr.sbin/syslogd/syslog.conf.5,v 1.44.2.1 2008/08/18 20:35:02 sobomax Exp $
+.\" $FreeBSD: src/usr.sbin/syslogd/syslog.conf.5,v 1.47.2.1 2009/08/03 08:13:06 kensmith Exp $
 .\"
-.\" $Id: syslog.conf.5,v 1.2 2009-02-11 22:45:20 karl Exp $
-.\"
-.Dd June 9, 1993
+.Dd December 23, 2008
 .Dt SYSLOG.CONF 5
 .Os
 .Sh NAME
@@ -139,7 +137,7 @@ The
 .Em level
 describes the severity of the message, and is a keyword from the
 following ordered list (higher to lower):
-.Cm emerg , alert , err , warning , notice , info
+.Cm emerg , crit , alert , err , warning , notice , info
 and
 .Cm debug .
 These keywords correspond to
@@ -448,7 +446,7 @@ A configuration file might appear as follows:
 # level notice or higher, and anything of level err or
 # higher to the console.
 # Don't log private authentication messages!
-*.err;kern.*;auth.notice;authpriv.none	/dev/console
+*.err;kern.*;auth.notice;authpriv.none;mail.crit	/dev/console
 
 # Log anything (except mail) of level info or higher.
 # Don't log private authentication messages!
@@ -478,15 +476,15 @@ uucp,news.crit						/var/log/spoolerr
 # Pipe all authentication messages to a filter.
 auth.*					|exec /usr/local/sbin/authfilter
 
-# Save ftpd transactions along with mail and news
-!ftpd
-*.*							/var/log/spoolerr
-
 # Log all security messages to a separate file.
 security.*						/var/log/security
 
 # Log all writes to /dev/console to a separate file.
 console.*						/var/log/console.log
+
+# Save ftpd transactions along with mail and news
+!ftpd
+*.*							/var/log/spoolerr
 
 # Log ipfw messages without syncing after every message.
 !ipfw
