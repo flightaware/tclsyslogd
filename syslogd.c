@@ -40,7 +40,7 @@ static char sccsid[] = "@(#)syslogd.c	8.3 (Berkeley) 4/4/94";
 #endif /* not lint */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD: src/usr.sbin/syslogd/syslogd.c,v 1.152.2.5 2008/09/01 16:10:47 obrien Exp $");
+__FBSDID("$FreeBSD: src/usr.sbin/syslogd/syslogd.c,v 1.163.2.2 2009/12/19 19:35:53 attilio Exp $");
 
 /*
  *  syslogd -- log system messages
@@ -77,6 +77,7 @@ __FBSDID("$FreeBSD: src/usr.sbin/syslogd/syslogd.c,v 1.152.2.5 2008/09/01 16:10:
 
 #include <sys/param.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
@@ -128,7 +129,7 @@ const char	ctty[] = _PATH_CONSOLE;
  */
 struct funix {
 	int			s;
-	char			*name;
+	const char		*name;
 	mode_t			mode;
 	STAILQ_ENTRY(funix)	next;
 };
@@ -293,6 +294,7 @@ static char	bootfile[MAXLINE+1]; /* booted kernel file */
 
 struct allowedpeer *AllowedPeers; /* List of allowed peers */
 static int	NumAllowed;	/* Number of entries in AllowedPeers */
+static int	RemoteAddDate;	/* Always set the date on remote messages */
 
 static int	UniquePriority;	/* Only log specified priority? */
 static int	LogFacPri;	/* Put facility and priority in log message: */
@@ -322,7 +324,7 @@ static void	logmsg(int, const char *, const char *, int);
 static void	log_deadchild(pid_t, int, const char *);
 static void	markit(void);
 static int	skip_message(const char *, const char *, int);
-static void	printline(const char *, char *);
+static void	printline(const char *, char *, int);
 static void	printsys(char *);
 static int	p_open(const char *, pid_t *);
 static void	readklog(void);
@@ -330,7 +332,7 @@ static void	reapchild(int);
 static void	usage(void);
 static int	validate(struct sockaddr *, const char *);
 static void	unmapped(struct sockaddr *);
-static void	wallmsg(struct filed *, struct iovec *);
+static void	wallmsg(struct filed *, struct iovec *, const int iovlen);
 static int	waitdaemon(int, int, int);
 static void	timedout(int);
 static void	double_rbuf(int);
@@ -351,8 +353,12 @@ main(int argc, char *argv[])
 	pid_t ppid = 1, spid;
 	socklen_t len;
 
+	if (madvise(NULL, 0, MADV_PROTECT) != 0)
+		dprintf("madvise() failed: %s\n", strerror(errno));
+
 	bindhostname = NULL;
-	while ((ch = getopt(argc, argv, "468Aa:b:cCdf:kl:m:nop:P:sS:uv")) != -1)
+	while ((ch = getopt(argc, argv, "468Aa:b:cCdf:kl:m:nop:P:sS:Tuv"))
+	    != -1)
 		switch (ch) {
 		case '4':
 			family = PF_INET;
@@ -451,6 +457,9 @@ main(int argc, char *argv[])
 			if (strlen(optarg) >= sizeof(sunx.sun_path))
 				errx(1, "%s path too long, exiting", optarg);
 			funix_secure.name = optarg;
+			break;
+		case 'T':
+			RemoteAddDate = 1;
 			break;
 		case 'u':		/* only log specified priority */
 			UniquePriority++;
@@ -644,7 +653,7 @@ main(int argc, char *argv[])
 						hname = cvthname((struct sockaddr *)&frominet);
 						unmapped((struct sockaddr *)&frominet);
 						if (validate((struct sockaddr *)&frominet, hname))
-							printline(hname, line);
+							printline(hname, line, RemoteAddDate ? ADDDATE : 0);
 					} else if (l < 0 && errno != EINTR)
 						logerror("recvfrom inet");
 				}
@@ -657,7 +666,7 @@ main(int argc, char *argv[])
 				    (struct sockaddr *)&fromunix, &len);
 				if (l > 0) {
 					line[l] = '\0';
-					printline(LocalHostName, line);
+					printline(LocalHostName, line, 0);
 				} else if (l < 0 && errno != EINTR)
 					logerror("recvfrom unix");
 			}
@@ -697,7 +706,7 @@ usage(void)
 {
 
 	fprintf(stderr, "%s\n%s\n%s\n%s\n",
-		"usage: syslogd [-468ACcdknosuv] [-a allowed_peer]",
+		"usage: syslogd [-468ACcdknosTuv] [-a allowed_peer]",
 		"               [-b bind_address] [-f config_file]",
 		"               [-l [mode:]path] [-m mark_interval]",
 		"               [-P pid_file] [-p log_socket]");
@@ -709,7 +718,7 @@ usage(void)
  * on the appropriate log files.
  */
 static void
-printline(const char *hname, char *msg)
+printline(const char *hname, char *msg, int flags)
 {
 	char *p, *q;
 	long n;
@@ -762,7 +771,7 @@ printline(const char *hname, char *msg)
 	}
 	*q = '\0';
 
-	logmsg(pri, line, hname, 0);
+	logmsg(pri, line, hname, flags);
 }
 
 /*
@@ -1060,10 +1069,11 @@ dofsync(void)
 	}
 }
 
+#define IOV_SIZE 7
 static void
 fprintlog(struct filed *f, int flags, const char *msg)
 {
-	struct iovec iov[7];
+	struct iovec iov[IOV_SIZE];
 	struct iovec *v;
 	struct addrinfo *r;
 	int i, l, lsent = 0;
@@ -1248,7 +1258,7 @@ fprintlog(struct filed *f, int flags, const char *msg)
 		dprintf(" %s\n", f->f_un.f_fname);
 		v->iov_base = lf;
 		v->iov_len = 1;
-		if (writev(f->f_file, iov, 7) < 0) {
+		if (writev(f->f_file, iov, IOV_SIZE) < 0) {
 			/*
 			 * If writev(2) fails for potentially transient errors
 			 * like the filesystem being full, ignore it.
@@ -1279,7 +1289,7 @@ fprintlog(struct filed *f, int flags, const char *msg)
 				break;
 			}
 		}
-		if (writev(f->f_file, iov, 7) < 0) {
+		if (writev(f->f_file, iov, IOV_SIZE) < 0) {
 			int e = errno;
 			(void)close(f->f_file);
 			if (f->f_un.f_pipe.f_pid > 0)
@@ -1304,7 +1314,7 @@ fprintlog(struct filed *f, int flags, const char *msg)
 		v->iov_len = 2;
 
 		errno = 0;	/* ttymsg() only sometimes returns an errno */
-		if ((msgret = ttymsg(iov, 7, f->f_un.f_fname, 10))) {
+		if ((msgret = ttymsg(iov, IOV_SIZE, f->f_un.f_fname, 10))) {
 			f->f_type = F_UNUSED;
 			logerror(msgret);
 		}
@@ -1315,7 +1325,7 @@ fprintlog(struct filed *f, int flags, const char *msg)
 		dprintf("\n");
 		v->iov_base = crlf;
 		v->iov_len = 2;
-		wallmsg(f, iov);
+		wallmsg(f, iov, IOV_SIZE);
 		break;
 	}
 	f->f_prevcount = 0;
@@ -1329,7 +1339,7 @@ fprintlog(struct filed *f, int flags, const char *msg)
  *	world, or a list of approved users.
  */
 static void
-wallmsg(struct filed *f, struct iovec *iov)
+wallmsg(struct filed *f, struct iovec *iov, const int iovlen)
 {
 	static int reenter;			/* avoid calling ourselves */
 	FILE *uf;
@@ -1353,7 +1363,8 @@ wallmsg(struct filed *f, struct iovec *iov)
 		strncpy(line, ut.ut_line, sizeof(line) - 1);
 		line[sizeof(line) - 1] = '\0';
 		if (f->f_type == F_WALL) {
-			if ((p = ttymsg(iov, 7, line, TTYMSGTIME)) != NULL) {
+			if ((p = ttymsg(iov, iovlen, line, TTYMSGTIME)) !=
+			    NULL) {
 				errno = 0;	/* already in msg */
 				logerror(p);
 			}
@@ -1365,8 +1376,8 @@ wallmsg(struct filed *f, struct iovec *iov)
 				break;
 			if (!strncmp(f->f_un.f_uname[i], ut.ut_name,
 			    UT_NAMESIZE)) {
-				if ((p = ttymsg(iov, 7, line, TTYMSGTIME))
-								!= NULL) {
+				if ((p = ttymsg(iov, iovlen, line, TTYMSGTIME))
+				    != NULL) {
 					errno = 0;	/* already in msg */
 					logerror(p);
 				}
@@ -2178,10 +2189,13 @@ allowaddr(char *s)
 	char *cp1, *cp2;
 	struct allowedpeer ap;
 	struct servent *se;
-	int masklen = -1, i;
+	int masklen = -1;
 	struct addrinfo hints, *res;
 	struct in_addr *addrp, *maskp;
+#ifdef INET6
+	int i;
 	u_int32_t *addr6p, *mask6p;
+#endif
 	char ip[NI_MAXHOST];
 
 #ifdef INET6
@@ -2337,12 +2351,15 @@ allowaddr(char *s)
 static int
 validate(struct sockaddr *sa, const char *hname)
 {
-	int i, j, reject;
+	int i;
 	size_t l1, l2;
 	char *cp, name[NI_MAXHOST], ip[NI_MAXHOST], port[NI_MAXSERV];
 	struct allowedpeer *ap;
 	struct sockaddr_in *sin4, *a4p = NULL, *m4p = NULL;
+#ifdef INET6
+	int j, reject;
 	struct sockaddr_in6 *sin6, *a6p = NULL, *m6p = NULL;
+#endif
 	struct addrinfo hints, *res;
 	u_short sport;
 
