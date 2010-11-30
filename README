@@ -1,0 +1,113 @@
+This is tclsyslogd, a verison of Berkeley syslogd that has a Tcl interpreter 
+built in.
+
+The reason we do this, instead of just scanning /var/log/messages, is that
+the translation of the syslog message to /var/log/messages causes fidelity to
+be lost -- only within syslogd are all the fields known in their entirety.
+
+Tclsyslogd is fully upward-compatible from regular syslogd -- all syslogd
+command line options and configuration files are fully supported.
+
+When running tclsyslogd, a Tcl interpreter is created and it is up to you
+to define a proc named "syslog" that takes the name of an array as an argument.
+
+Whenever tclsyslogd receives a syslog message, whether initiated locally or
+remotely (if so configured), your syslog proc is invoked, which can then
+look at the message and decide what to do about it, if anything.
+
+The named array argument should be aliased locally in the syslog proc as an 
+name you want to refer to the array as within your proc, using upvar.
+
+Here is pretty much the simplest possible syslog proc:
+
+proc syslog {messageArray} {
+    upvar $messageArray message
+
+    parray message
+    puts ""
+}
+
+This proc will be called for every syslog message received by tclsyslogd.
+This will print the array comprising each syslog message as it is received.
+
+The upvar says I want to refer to the array as "message".
+
+Your proc can then examine the array for key-value pairs.  Some keys will
+always be present and some may or may not be present.
+
+The available key-value pairs are as follows:
+
+	clock - the current time as an epoch clock (not from the message
+	        by rather the epoch clock on the server tclsyslogd is
+		running on)
+
+	timestamp - the timestamp string from the message.  Note that the
+	            string is locale dependent and may be in the timezone
+		    of the process that generated the log message, which
+		    may be a different timezone from the default or even
+		    other instances of the same calling program.
+
+	from - the host on which the syslog message was generated
+
+	facility - the facility specified in the syslog message
+
+	priority - the priority specified in the syslog message
+
+	program - the program that generated the syslog message
+
+	kernel - OPTIONAL - the kernel prefix if the message was generated
+	                    by the operating system kernel
+
+	msg - the text of the syslog message
+
+example messages:
+
+message(clock)     = 1291160416
+message(facility)  = daemon
+message(from)      = cfood
+message(msg)       = nrpe[47754]: Command completed with return code 0 and output: mem_used:8032756 mem_total:16777216
+message(priority)  = debug
+message(program)   = nrpe
+message(timestamp) = Nov 30 17:40:16 
+
+message(clock)     = 1291160409
+message(facility)  = local5
+message(from)      = cfood
+message(msg)       = balancer[44238]: agent_heartbeat: cfood.hou.flightaware.com (sock7) 0.66
+message(priority)  = debug
+message(program)   = balancer
+message(timestamp) = Nov 30 17:40:09 
+
+message(clock)     = 1291160402
+message(facility)  = syslog
+message(from)      = cfood
+message(msg)       = syslogd: restart
+message(priority)  = info
+message(program)   = syslogd
+message(timestamp) = Nov 30 17:40:02 
+
+message(clock)     = 1291160580
+message(facility)  = cron
+message(from)      = cfood
+message(msg)       = /usr/sbin/cron[47841]: (dbaker) CMD (/usr/local/flightaware/utilities/update_boards_from_airline_fleets.tcl | /usr/local/bin/psql -h asdidata.db.flightaware.com asdidata>/dev/null)
+message(priority)  = info
+message(program)   = 
+message(timestamp) = Nov 30 17:43:00 
+
+message(clock)     = 1291160614
+message(facility)  = local5
+message(from)      = cfood
+message(msg)       = balancer[44238]: agent_heartbeat: cfood.hou.flightaware.com (sock7) 0.58
+message(priority)  = debug
+message(program)   = balancer
+message(timestamp) = Nov 30 17:43:34 
+
+message(clock)     = 1291160626
+message(facility)  = mail
+message(from)      = cfood
+message(msg)       = postfix/smtp[47864]: E338E629299: to=<tom@aperturehealth.com>, relay=none, delay=374433, delays=374431/0.45/1.2/0, dsn=4.4.3, status=deferred (Host or domain name not found. Name service error for name=aperturehealth.com type=MX: Host not found, try again)
+message(priority)  = info
+message(program)   = postfix
+message(timestamp) = Nov 30 17:43:46 
+
+
