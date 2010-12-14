@@ -47,13 +47,27 @@ The available key-value pairs are as follows:
 		    may be a different timezone from the default or even
 		    other instances of the same calling program.
 
-	from - the host on which the syslog message was generated
+	host - the host on which the syslog message was generated (system
+	       the message is from)
 
 	facility - the facility specified in the syslog message
 
+	    facility can be one of...
+
+	        auth, authpriv, console, cron, daemon, ftp, kern, lpr,
+		mail, news, ntp, security, syslog, user, uucp,
+		local0, local1, local2, local3, local4, local5, local6,
+		local7
+
 	priority - the priority specified in the syslog message
 
+	    priority can be one of...
+
+	        alert, crit, debug, emerg, err, info, notice, warning
+
 	program - the program that generated the syslog message
+
+	    program will be present but empty if not specified
 
 	kernel - OPTIONAL - the kernel prefix if the message was generated
 	                    by the operating system kernel
@@ -64,7 +78,7 @@ example messages:
 
 message(clock)     = 1291160416
 message(facility)  = daemon
-message(from)      = cfood
+message(host)      = cfood
 message(msg)       = nrpe[47754]: Command completed with return code 0 and output: mem_used:8032756 mem_total:16777216
 message(priority)  = debug
 message(program)   = nrpe
@@ -72,7 +86,7 @@ message(timestamp) = Nov 30 17:40:16
 
 message(clock)     = 1291160409
 message(facility)  = local5
-message(from)      = cfood
+message(host)      = cfood
 message(msg)       = balancer[44238]: agent_heartbeat: cfood.hou.flightaware.com (sock7) 0.66
 message(priority)  = debug
 message(program)   = balancer
@@ -80,7 +94,7 @@ message(timestamp) = Nov 30 17:40:09
 
 message(clock)     = 1291160402
 message(facility)  = syslog
-message(from)      = cfood
+message(host)      = cfood
 message(msg)       = syslogd: restart
 message(priority)  = info
 message(program)   = syslogd
@@ -88,15 +102,15 @@ message(timestamp) = Nov 30 17:40:02
 
 message(clock)     = 1291160580
 message(facility)  = cron
-message(from)      = cfood
-message(msg)       = /usr/sbin/cron[47841]: (dbaker) CMD (/usr/local/flightaware/utilities/update_boards_from_airline_fleets.tcl | /usr/local/bin/psql -h asdidata.db.flightaware.com asdidata>/dev/null)
+message(host)      = cfood
+message(msg)       = /usr/sbin/cron[47841]: ...
 message(priority)  = info
 message(program)   = 
 message(timestamp) = Nov 30 17:43:00 
 
 message(clock)     = 1291160614
 message(facility)  = local5
-message(from)      = cfood
+message(host)      = cfood
 message(msg)       = balancer[44238]: agent_heartbeat: cfood.hou.flightaware.com (sock7) 0.58
 message(priority)  = debug
 message(program)   = balancer
@@ -104,7 +118,7 @@ message(timestamp) = Nov 30 17:43:34
 
 message(clock)     = 1291160626
 message(facility)  = mail
-message(from)      = cfood
+message(host)      = cfood
 message(msg)       = postfix/smtp[47864]: E338E629299: to=<tom@aperturehealth.com>, relay=none, delay=374433, delays=374431/0.45/1.2/0, dsn=4.4.3, status=deferred (Host or domain name not found. Name service error for name=aperturehealth.com type=MX: Host not found, try again)
 message(priority)  = info
 message(program)   = postfix
