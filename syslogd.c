@@ -765,9 +765,7 @@ call_tcl () {
 
 static void
 tcl_tick () {
-    if (Tcl_Eval (interp, "tick") == TCL_ERROR) {
-	dprintf("tcl eval failed: %s\n", Tcl_GetStringResult (interp));
-    }
+    while (Tcl_DoOneEvent (TCL_DONT_WAIT)) continue;
 }
 
 /*

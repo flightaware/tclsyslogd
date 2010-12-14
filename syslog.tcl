@@ -1,7 +1,5 @@
 #
-#
-#
-# $Id: syslog.tcl,v 1.1 2009-02-09 09:44:15 karl Exp $
+# an extremely simple syslog.tcl 
 #
 
 proc syslog {messageArray} {
@@ -11,9 +9,3 @@ proc syslog {messageArray} {
     puts ""
 }
 
-#
-# tick - tick routine, called periodically by tclsyslogd C code
-#
-proc tick {} {
-    update
-}
