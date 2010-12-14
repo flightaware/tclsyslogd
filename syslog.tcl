@@ -10,3 +10,10 @@ proc syslog {messageArray} {
     parray message
     puts ""
 }
+
+#
+# tick - tick routine, called periodically by tclsyslogd C code
+#
+proc tick {} {
+    update
+}

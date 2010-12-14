@@ -346,6 +346,7 @@ static void	double_rbuf(int);
 
 static void	init_tcl(void);
 static void	call_tcl (void);
+static void	tcl_tick (void);
 
 static void
 init_tcl (void)
@@ -608,8 +609,14 @@ main(int argc, char *argv[])
 	sact.sa_flags = SA_RESTART;
 	(void)sigaction(SIGHUP, &sact, NULL);
 
+	// we set tv_usec to 50000 and prevent select from being called
+	// with a null timeval so that we can invoke a "tick" proc in
+	// the tcl interpreter 20 times a second.  this allows tcl to
+	// invoke update or whatever, keeping its event loop, sockets,
+	// etc, alive
 	tvp = &tv;
-	tv.tv_sec = tv.tv_usec = 0;
+	tv.tv_sec = 0;
+	tv.tv_usec = 50000;
 
 	if (fklog != -1 && fklog > fdsrmax)
 		fdsrmax = fklog;
@@ -649,7 +656,8 @@ main(int argc, char *argv[])
 			FD_SET(fx->s, fdsr);
 
 		i = select(fdsrmax+1, fdsr, NULL, NULL,
-		    needdofsync ? &tv : tvp);
+		    &tv);
+		tcl_tick();
 		switch (i) {
 		case 0:
 			dofsync();
@@ -753,6 +761,13 @@ call_tcl () {
     }
 
     Tcl_UnsetVar (interp, "message", 0);
+}
+
+static void
+tcl_tick () {
+    if (Tcl_Eval (interp, "tick") == TCL_ERROR) {
+	dprintf("tcl eval failed: %s\n", Tcl_GetStringResult (interp));
+    }
 }
 
 /*
