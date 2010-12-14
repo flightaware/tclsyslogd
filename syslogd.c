@@ -988,7 +988,7 @@ logmsg(int pri, const char *msg, const char *from, int flags)
 
 	set_tcl_var ("clock", Tcl_NewLongObj (now));
 	set_tcl_var ("timestamp", Tcl_NewStringObj (timestamp, sizeof(f->f_lasttime)));
-	set_tcl_var ("from", Tcl_NewStringObj (from, -1));
+	set_tcl_var ("host", Tcl_NewStringObj (from, -1));
 
 	/* skip leading blanks */
 	while (isspace(*msg)) {
