@@ -1,0 +1,18 @@
+
+Build tclsyslogd from the src directory.
+
+Make install doesn't currently work from there as this stuff isn't in
+the FreeBSD source tree.
+
+Copy tclsyslogd script to /usr/local/etc/rc.d
+
+Copy tclsyslogd binary from ../src to /usr/local/sbin
+
+Edit /etc/rc.conf to enable tclsyslogd and disable syslogd...
+
+tclsyslogd_enable="YES"
+syslogd_enable="NO"
+
+Copy syslogd_flags as tclsyslogd_flags, for instance for a log host:
+
+tclsyslogd_flags=""

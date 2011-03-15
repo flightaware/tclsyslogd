@@ -1,5 +1,5 @@
-syslog.conf.5.gz
-tclsyslogd
-syslogd.8.gz
-syslogd.o
-ttymsg.o
+src/syslog.conf.5.gz
+src/tclsyslogd
+src/syslogd.8.gz
+src/syslogd.o
+src/ttymsg.o
