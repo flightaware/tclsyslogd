@@ -1,5 +1,5 @@
-This is tclsyslogd, a verison of Berkeley syslogd that has a Tcl interpreter 
-built in.
+This is tclsyslogd, a modified verison of FreeBSD syslogd that has a Tcl 
+interpreter built-in.
 
 The reason we do this, instead of just scanning /var/log/messages, is that
 the translation of the syslog message to /var/log/messages causes fidelity to
@@ -8,8 +8,10 @@ be lost -- only within syslogd are all the fields known in their entirety.
 Tclsyslogd is fully upward-compatible from regular syslogd -- all syslogd
 command line options and configuration files are fully supported.
 
-When running tclsyslogd, a Tcl interpreter is created and it is up to you
-to define a proc named "syslog" that takes the name of an array as an argument.
+When running tclsyslogd, a Tcl interpreter is created and the file
+/usr/local/etc/tclsyslogd/syslog.tcl is sourced in.  If the file isn't
+found, tclsyslogd doesn't do any tcl stuff.  If normal debugging is enabled,
+it dprintf's messages about any problems it has starting up.
 
 Whenever tclsyslogd receives a syslog message, whether initiated locally or
 remotely (if so configured), your syslog proc is invoked, which can then
@@ -18,7 +20,7 @@ look at the message and decide what to do about it, if anything.
 The named array argument should be aliased locally in the syslog proc as an 
 name you want to refer to the array as within your proc, using upvar.
 
-Here is pretty much the simplest possible syslog proc:
+Here is a very simple syslog proc:
 
 proc syslog {messageArray} {
     upvar $messageArray message

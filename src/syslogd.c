@@ -357,7 +357,7 @@ init_tcl (void)
 	return;
     }
 
-    if (Tcl_Eval (interp, "source syslog.tcl") == TCL_ERROR) {
+    if (Tcl_Eval (interp, "source /usr/local/etc/tclsyslogd/syslog.tcl") == TCL_ERROR) {
 	dprintf("tcl startup failed: %s\n", Tcl_GetStringResult (interp));
     }
 }
