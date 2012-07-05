@@ -34,4 +34,5 @@
 
 #define	_PATH_KLOG	"/dev/klog"
 #define	_PATH_LOGCONF	"/etc/syslog.conf"
+#define	_PATH_TCLCONF	"/usr/local/etc/syslog.tcl"
 #define	_PATH_LOGPID	"/var/run/syslog.pid"

@@ -4,8 +4,10 @@
 #
 
 # PROVIDE: syslogd
-# REQUIRE: mountcritremote cleanvar newsyslog
-# BEFORE:  SERVERS
+# REQUIRE: LOGIN
+
+## REQUIRE: mountcritremote cleanvar newsyslog
+## BEFORE:  SERVERS
 
 . /etc/rc.subr
 

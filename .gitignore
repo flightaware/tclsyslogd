@@ -3,3 +3,6 @@ src/tclsyslogd
 src/syslogd.8.gz
 src/syslogd.o
 src/ttymsg.o
+syslogd.8.gz
+syslog.conf.5.gz
+tclsyslogd
